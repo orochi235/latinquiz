@@ -1,0 +1,77 @@
+body {
+	background-color: white;
+}
+button {
+	font-size: 18pt;
+}
+input {
+	border: 1px solid black;
+	font-size: 12pt;
+	font-weight: bold;
+	/*height: 90%;*/
+	margin-left: 5px;
+	margin-right: 5px;
+	padding: 2%;
+	vertical-align: baseline;
+	width: 90%;
+}
+table {
+	border-spacing: 0;
+	border-collapse: collapse;
+	width: 90%;
+}
+td {
+	vertical-align: baseline;
+}
+td.entry-1 {
+	background-color: #A0A0A0;
+}
+td.entry-2 {
+	background-color: #606060;
+}
+td.row-label {
+	font-size: 16pt;
+	padding-right: .5em;
+	width: 12%;
+}
+tr.column-heading-gender td.column-heading-1, tr.column-heading-gender td.column-heading-2 {
+	background-color: #F0F0F0;
+	color: black;
+	font-size: 16pt;
+	font-weight: bold;
+	padding-bottom: .25em;
+	padding-top: .3em;
+	text-align: center;
+	vertical-align: baseline;
+}
+tr.column-heading-number td.column-heading-1, tr.column-heading-number td.column-heading-2 {
+	font-size: 12pt;
+	font-weight: normal;
+	padding-bottom: .4em;
+	padding-top: .5em;
+	text-align: center;
+	text-transform: uppercase;
+}
+td.column-heading-1 {
+	background-color: #A0A0A0;
+	color: white;
+}
+td.column-heading-2 {
+	background-color: #606060;
+	color: white;
+}
+td.header-overlap {
+	background-color: #E0E0E0;
+}
+.row-label {
+	background-color: #F0F0F0;
+	font-weight: bold;
+	text-align: right;
+	vertical-align: baseline;
+}
+.section-heading {
+	background-color: #D0D0D0;
+	padding: .25em 0 .18em 0;
+	font-size: 18pt;
+	text-align: center;
+}
