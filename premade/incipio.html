@@ -1,0 +1,1350 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Verb Quiz: incipio</title>
+<style type="text/css">
+body {
+	background-color: white;
+}
+button {
+	font-size: 18pt;
+}
+input {
+	border: 1px solid black;
+	font-size: 12pt;
+	font-weight: bold;
+	/*height: 90%;*/
+	margin-left: 5px;
+	margin-right: 5px;
+	padding: 2%;
+	vertical-align: baseline;
+	width: 90%;
+}
+table {
+	border-spacing: 0;
+	border-collapse: collapse;
+	width: 90%;
+}
+td {
+	vertical-align: baseline;
+}
+td.entry-1 {
+	background-color: #A0A0A0;
+}
+td.entry-2 {
+	background-color: #606060;
+}
+td.row-label {
+	font-size: 16pt;
+	padding-right: .5em;
+	width: 12%;
+}
+tr.column-heading-gender td.column-heading-1, tr.column-heading-gender td.column-heading-2 {
+	background-color: #F0F0F0;
+	color: black;
+	font-size: 16pt;
+	font-weight: bold;
+	padding-bottom: .25em;
+	padding-top: .3em;
+	text-align: center;
+	vertical-align: baseline;
+}
+tr.column-heading-number td.column-heading-1, tr.column-heading-number td.column-heading-2 {
+	font-size: 12pt;
+	font-weight: normal;
+	padding-bottom: .4em;
+	padding-top: .5em;
+	text-align: center;
+	text-transform: uppercase;
+}
+td.column-heading-1 {
+	background-color: #A0A0A0;
+	color: white;
+}
+td.column-heading-2 {
+	background-color: #606060;
+	color: white;
+}
+td.header-overlap {
+	background-color: #E0E0E0;
+}
+.row-label {
+	background-color: #F0F0F0;
+	font-weight: bold;
+	text-align: right;
+	vertical-align: baseline;
+}
+.section-heading {
+	background-color: #D0D0D0;
+	padding: .25em 0 .18em 0;
+	font-size: 18pt;
+	text-align: center;
+}</style>
+</head>
+<body>
+<!-- Written by Michael Baker (twitter.com/devnull17), 2012 -->
+<script language="javascript">
+
+function checkAnswer(field) {
+	if (field.value == "" || field.value == null) {
+		markClear(field);
+		return false;
+	} else {
+		if (isCorrect(field.name)) {
+			field.value = field.value.toLowerCase();
+			markRight(field);
+			lockField(field);
+			return true;
+		} else {
+			markWrong(field);
+			return false;
+		}
+	}
+}
+
+function chooseNextField(currentField) {
+	// move cursor to the next open field
+	var closestOffset = 0;
+	var chosenName = "";
+	for (fieldName in lockStatus) {
+		if (lockStatus[fieldName]) continue; // ignore locked fields
+		var tabIndex = document.getElementById(fieldName).tabIndex;
+		var distance = tabIndex - currentField.tabIndex;
+		if (closestOffset == 0) {
+			// the first value is always the best option so far
+			console.log("Found better match for next field via rule 1 - current tab index is " + currentField.tabIndex + "; old closest offset was " + closestOffset + "; new one is " + distance + "(" + fieldName + ")");
+			closestOffset = distance;
+			chosenName = fieldName;
+			continue;
+		}
+		
+		if (closestOffset > 0) {
+			// there's something after this in the list
+			if (distance < closestOffset && distance > 0) {
+				console.log("Found better match for next field via rule 2 - current tab index is " + currentField.tabIndex + "; old closest offset was " + closestOffset + "; new one is " + distance + "(" + fieldName + ")");
+				closestOffset = distance;
+				chosenName = fieldName;
+			}
+			continue;
+		}
+		
+		if (closestOffset < 0) { // statement added for clarity
+			// if we're wrapping around, we want to end up as low as possible on the list
+			// we also want to automatically save if the current one is ahead in the list, and the previous best match was behind
+			if (tabIndex < distance + closestOffset || distance > 0) {
+				console.log("Found better match for next field via rule 3 - current tab index is " + currentField.tabIndex + "; old closest offset was " + closestOffset + "; new one is " + distance + "(" + fieldName + ")");
+				closestOffset = distance;
+				chosenName = fieldName;
+			}
+			continue;
+		}
+	}
+	
+	if (closestOffset != 0) {
+		document.getElementById(chosenName).focus();
+	}
+}
+
+function chooseRandomField() {
+	var index = Math.floor(Math.random() * (openFields.length));
+	var name = openFields[index];
+	var field = document.getElementById(name);
+	field.focus();
+}
+
+function clearAll() {
+	for (i = 0; i < fields.length; i++) {
+		var f = document.getElementById(fields[i]);
+		unlockField(f);
+		clearField(f);
+		markClear(f);
+	}
+}
+
+function clearField(field) {
+	field.value = "";
+	field.style.fontWeight = "bold";
+}
+
+function fillAnswers() {
+	for (i = 0; i < fields.length; i++) {
+		giveAnswer(document.getElementById(fields[i]));
+		lockField(document.getElementById(fields[i]));
+	}
+}
+
+function getCookie(c_name) {
+var i,x,y,ARRcookies=document.cookie.split(";");
+for (i=0;i<ARRcookies.length;i++)
+  {
+  x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+  y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+  x=x.replace(/^\s+|\s+$/g,"");
+  if (x==c_name)
+    {
+    return unescape(y);
+    }
+  }
+}
+
+function giveAnswer(field) {
+	if (field == null) return;
+	if (isLocked(field)) return;
+	// field.style.fontWeight = isCorrect(field.name) ? "bold" : "normal";
+	if (!isCorrect(field.name)) markSolved(field);
+	field.value = answers[field.name];
+	lockField(field);	
+}
+
+function handleBlur() {
+	var result = checkAnswer(this);
+}
+
+function handleChange() {
+	var result = checkAnswer(this);
+}
+
+function handleClick(e) {
+	
+	if (!e) var e = window.event;
+	// e.cancelBubble = true;
+	// TODO: go back to previous field if a non-active field was selected
+	
+	giveAnswer(this);
+
+	if (isShuffleModeOn()) {
+		//chooseRandomField();
+	} else {
+		chooseNextField(this);
+	}
+	
+	return false;
+
+}
+
+function handleKeystroke(e) {
+	var key = (window.event) ? event.keyCode : e.keyCode;
+	switch (key) { 
+	case 9:// tab
+		if (isShuffleModeOn()) {
+			e.cancelBubble = true;
+			chooseRandomField();
+		}
+		break;
+	case 13: // enter
+		if (document.activeElement.tagName.toLowerCase() == "input" && document.activeElement.value.length == 0) {
+			// pressing enter on a blank field should yield the answer
+			var myField = document.activeElement;
+			giveAnswer(myField);
+			if (!isShuffleModeOn()) chooseNextField(myField);
+			return;
+		}
+		checkAnswer(document.activeElement);
+		markActive(document.activeElement);
+		if (!isShuffleModeOn()) chooseNextField(document.activeElement);
+		break;
+	}
+}
+
+function isCorrect(fieldName) {
+	field = document.getElementById(fieldName);
+	return field.value.toLowerCase().replace(/(^\s+|\s+$)/g,' ') == answers[fieldName].toLowerCase();
+}	
+
+function isLocked(field) {
+	return lockStatus[field.name];
+}
+
+function isShuffleModeOn() {
+	return document.getElementById("shuffle").checked;	
+}
+
+function loadSettings() {
+	var shuffle = document.getElementById("shuffle");
+	var shuffleFlag = getCookie("latin_shuffle") == 1;	
+	shuffle.checked = shuffleFlag;
+}
+
+function lockField(field) {
+	field.disabled = true;
+	lockStatus[field.name] = true;
+	var index = openFields.indexOf(field.name);
+	if (index < 0) {
+		console.log("WARNING: failed to lock field '" + field.name + "', as it was not present in the collection.");
+		return false; 	
+	}
+	openFields.splice(index, 1);
+	console.log("Locked field '" + field.name + "'. " + openFields.length + " open field(s) remain.");
+}
+
+function markActive(field) {
+	if (lockStatus[field.name]) return; // ignore if locked
+	field.style.backgroundColor = "#FFFF66";
+	field.style.color = "black";
+	field.style.fontWeight = "bold";
+}
+
+function markClear(field) {
+	if (lockStatus[field.name]) return; // ignore if locked
+	field.style.backgroundColor = "white";
+	field.style.color = "black";
+	field.style.fontWeight = "bold";
+}
+
+function markRight(field) {
+	if (lockStatus[field.name]) return; // ignore if locked
+	field.style.backgroundColor = "green";
+	field.style.color = "white";
+	field.style.fontWeight = "normal";
+}
+
+function markSolved(field) {
+	if (lockStatus[field.name]) return; // ignore if locked
+	field.style.backgroundColor = "slateblue";
+	field.style.color = "white";
+	field.style.fontWeight = "normal";
+}
+
+function markWrong(field) {
+	if (lockStatus[field.name]) return; // ignore if locked
+	field.style.backgroundColor = "red";
+	field.style.color = "white";
+	field.style.fontWeight = "bold";
+}
+
+function saveSettings() {
+	var shuffle = document.getElementById("shuffle");
+	var shuffleFlag = shuffle.checked ? 1 : 0;
+	setCookie("latin_shuffle", shuffleFlag, 1000);	
+}
+
+function setCookie(c_name,value,exdays) {
+	var exdate=new Date();
+	exdate.setDate(exdate.getDate() + exdays);
+	var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+	document.cookie=c_name + "=" + c_value;
+}
+
+function unlockField(field) {
+	field.disabled = false;
+	lockStatus[field.name] = false;
+	var index = openFields.indexOf(field.name);
+	if (index < 0) openFields.push(field.name);
+}
+
+
+function update(field) {
+	checkAnswer(field);
+}
+
+	var answers = new Array();
+	var fields = new Array();
+	var openFields = new Array();
+	var lockStatus = new Array();
+	answers['act_ind_singular_pres_1'] = 'incipio';
+fields.push('act_ind_singular_pres_1');
+openFields.push('act_ind_singular_pres_1');
+lockStatus['act_ind_singular_pres_1'] = false;
+answers['act_ind_singular_pres_2'] = 'incipis';
+fields.push('act_ind_singular_pres_2');
+openFields.push('act_ind_singular_pres_2');
+lockStatus['act_ind_singular_pres_2'] = false;
+answers['act_ind_singular_pres_3'] = 'incipit';
+fields.push('act_ind_singular_pres_3');
+openFields.push('act_ind_singular_pres_3');
+lockStatus['act_ind_singular_pres_3'] = false;
+answers['act_ind_singular_imp_1'] = 'incipiebam';
+fields.push('act_ind_singular_imp_1');
+openFields.push('act_ind_singular_imp_1');
+lockStatus['act_ind_singular_imp_1'] = false;
+answers['act_ind_singular_imp_2'] = 'incipiebas';
+fields.push('act_ind_singular_imp_2');
+openFields.push('act_ind_singular_imp_2');
+lockStatus['act_ind_singular_imp_2'] = false;
+answers['act_ind_singular_imp_3'] = 'incipiebat';
+fields.push('act_ind_singular_imp_3');
+openFields.push('act_ind_singular_imp_3');
+lockStatus['act_ind_singular_imp_3'] = false;
+answers['act_ind_singular_fut_1'] = 'incipiam';
+fields.push('act_ind_singular_fut_1');
+openFields.push('act_ind_singular_fut_1');
+lockStatus['act_ind_singular_fut_1'] = false;
+answers['act_ind_singular_fut_2'] = 'incipies';
+fields.push('act_ind_singular_fut_2');
+openFields.push('act_ind_singular_fut_2');
+lockStatus['act_ind_singular_fut_2'] = false;
+answers['act_ind_singular_fut_3'] = 'incipiet';
+fields.push('act_ind_singular_fut_3');
+openFields.push('act_ind_singular_fut_3');
+lockStatus['act_ind_singular_fut_3'] = false;
+answers['act_ind_singular_perf_1'] = 'incepi';
+fields.push('act_ind_singular_perf_1');
+openFields.push('act_ind_singular_perf_1');
+lockStatus['act_ind_singular_perf_1'] = false;
+answers['act_ind_singular_perf_2'] = 'incepisti';
+fields.push('act_ind_singular_perf_2');
+openFields.push('act_ind_singular_perf_2');
+lockStatus['act_ind_singular_perf_2'] = false;
+answers['act_ind_singular_perf_3'] = 'incepit';
+fields.push('act_ind_singular_perf_3');
+openFields.push('act_ind_singular_perf_3');
+lockStatus['act_ind_singular_perf_3'] = false;
+answers['act_ind_singular_plu_1'] = 'inceperam';
+fields.push('act_ind_singular_plu_1');
+openFields.push('act_ind_singular_plu_1');
+lockStatus['act_ind_singular_plu_1'] = false;
+answers['act_ind_singular_plu_2'] = 'inceperas';
+fields.push('act_ind_singular_plu_2');
+openFields.push('act_ind_singular_plu_2');
+lockStatus['act_ind_singular_plu_2'] = false;
+answers['act_ind_singular_plu_3'] = 'inceperat';
+fields.push('act_ind_singular_plu_3');
+openFields.push('act_ind_singular_plu_3');
+lockStatus['act_ind_singular_plu_3'] = false;
+answers['act_ind_singular_futperf_1'] = 'incepero';
+fields.push('act_ind_singular_futperf_1');
+openFields.push('act_ind_singular_futperf_1');
+lockStatus['act_ind_singular_futperf_1'] = false;
+answers['act_ind_singular_futperf_2'] = 'inceperis';
+fields.push('act_ind_singular_futperf_2');
+openFields.push('act_ind_singular_futperf_2');
+lockStatus['act_ind_singular_futperf_2'] = false;
+answers['act_ind_singular_futperf_3'] = 'inceperit';
+fields.push('act_ind_singular_futperf_3');
+openFields.push('act_ind_singular_futperf_3');
+lockStatus['act_ind_singular_futperf_3'] = false;
+answers['act_ind_plural_pres_1'] = 'incipimus';
+fields.push('act_ind_plural_pres_1');
+openFields.push('act_ind_plural_pres_1');
+lockStatus['act_ind_plural_pres_1'] = false;
+answers['act_ind_plural_pres_2'] = 'incipitis';
+fields.push('act_ind_plural_pres_2');
+openFields.push('act_ind_plural_pres_2');
+lockStatus['act_ind_plural_pres_2'] = false;
+answers['act_ind_plural_pres_3'] = 'incipiunt';
+fields.push('act_ind_plural_pres_3');
+openFields.push('act_ind_plural_pres_3');
+lockStatus['act_ind_plural_pres_3'] = false;
+answers['act_ind_plural_imp_1'] = 'incipiebamus';
+fields.push('act_ind_plural_imp_1');
+openFields.push('act_ind_plural_imp_1');
+lockStatus['act_ind_plural_imp_1'] = false;
+answers['act_ind_plural_imp_2'] = 'incipiebatis';
+fields.push('act_ind_plural_imp_2');
+openFields.push('act_ind_plural_imp_2');
+lockStatus['act_ind_plural_imp_2'] = false;
+answers['act_ind_plural_imp_3'] = 'incipiebant';
+fields.push('act_ind_plural_imp_3');
+openFields.push('act_ind_plural_imp_3');
+lockStatus['act_ind_plural_imp_3'] = false;
+answers['act_ind_plural_fut_1'] = 'incipiemus';
+fields.push('act_ind_plural_fut_1');
+openFields.push('act_ind_plural_fut_1');
+lockStatus['act_ind_plural_fut_1'] = false;
+answers['act_ind_plural_fut_2'] = 'incipietis';
+fields.push('act_ind_plural_fut_2');
+openFields.push('act_ind_plural_fut_2');
+lockStatus['act_ind_plural_fut_2'] = false;
+answers['act_ind_plural_fut_3'] = 'incipient';
+fields.push('act_ind_plural_fut_3');
+openFields.push('act_ind_plural_fut_3');
+lockStatus['act_ind_plural_fut_3'] = false;
+answers['act_ind_plural_perf_1'] = 'incepimus';
+fields.push('act_ind_plural_perf_1');
+openFields.push('act_ind_plural_perf_1');
+lockStatus['act_ind_plural_perf_1'] = false;
+answers['act_ind_plural_perf_2'] = 'incepistis';
+fields.push('act_ind_plural_perf_2');
+openFields.push('act_ind_plural_perf_2');
+lockStatus['act_ind_plural_perf_2'] = false;
+answers['act_ind_plural_perf_3'] = 'inceperunt';
+fields.push('act_ind_plural_perf_3');
+openFields.push('act_ind_plural_perf_3');
+lockStatus['act_ind_plural_perf_3'] = false;
+answers['act_ind_plural_plu_1'] = 'inceperamus';
+fields.push('act_ind_plural_plu_1');
+openFields.push('act_ind_plural_plu_1');
+lockStatus['act_ind_plural_plu_1'] = false;
+answers['act_ind_plural_plu_2'] = 'inceperatis';
+fields.push('act_ind_plural_plu_2');
+openFields.push('act_ind_plural_plu_2');
+lockStatus['act_ind_plural_plu_2'] = false;
+answers['act_ind_plural_plu_3'] = 'inceperant';
+fields.push('act_ind_plural_plu_3');
+openFields.push('act_ind_plural_plu_3');
+lockStatus['act_ind_plural_plu_3'] = false;
+answers['act_ind_plural_futperf_1'] = 'inceperimus';
+fields.push('act_ind_plural_futperf_1');
+openFields.push('act_ind_plural_futperf_1');
+lockStatus['act_ind_plural_futperf_1'] = false;
+answers['act_ind_plural_futperf_2'] = 'inceperitis';
+fields.push('act_ind_plural_futperf_2');
+openFields.push('act_ind_plural_futperf_2');
+lockStatus['act_ind_plural_futperf_2'] = false;
+answers['act_ind_plural_futperf_3'] = 'inceperint';
+fields.push('act_ind_plural_futperf_3');
+openFields.push('act_ind_plural_futperf_3');
+lockStatus['act_ind_plural_futperf_3'] = false;
+answers['act_subj_singular_pres_1'] = 'incipiam';
+fields.push('act_subj_singular_pres_1');
+openFields.push('act_subj_singular_pres_1');
+lockStatus['act_subj_singular_pres_1'] = false;
+answers['act_subj_singular_pres_2'] = 'incipias';
+fields.push('act_subj_singular_pres_2');
+openFields.push('act_subj_singular_pres_2');
+lockStatus['act_subj_singular_pres_2'] = false;
+answers['act_subj_singular_pres_3'] = 'incipiat';
+fields.push('act_subj_singular_pres_3');
+openFields.push('act_subj_singular_pres_3');
+lockStatus['act_subj_singular_pres_3'] = false;
+answers['act_subj_singular_imp_1'] = 'inciperem';
+fields.push('act_subj_singular_imp_1');
+openFields.push('act_subj_singular_imp_1');
+lockStatus['act_subj_singular_imp_1'] = false;
+answers['act_subj_singular_imp_2'] = 'inciperes';
+fields.push('act_subj_singular_imp_2');
+openFields.push('act_subj_singular_imp_2');
+lockStatus['act_subj_singular_imp_2'] = false;
+answers['act_subj_singular_imp_3'] = 'inciperet';
+fields.push('act_subj_singular_imp_3');
+openFields.push('act_subj_singular_imp_3');
+lockStatus['act_subj_singular_imp_3'] = false;
+answers['act_subj_singular_perf_1'] = 'inceperim';
+fields.push('act_subj_singular_perf_1');
+openFields.push('act_subj_singular_perf_1');
+lockStatus['act_subj_singular_perf_1'] = false;
+answers['act_subj_singular_perf_2'] = 'inceperis';
+fields.push('act_subj_singular_perf_2');
+openFields.push('act_subj_singular_perf_2');
+lockStatus['act_subj_singular_perf_2'] = false;
+answers['act_subj_singular_perf_3'] = 'inceperit';
+fields.push('act_subj_singular_perf_3');
+openFields.push('act_subj_singular_perf_3');
+lockStatus['act_subj_singular_perf_3'] = false;
+answers['act_subj_singular_plu_1'] = 'incepissem';
+fields.push('act_subj_singular_plu_1');
+openFields.push('act_subj_singular_plu_1');
+lockStatus['act_subj_singular_plu_1'] = false;
+answers['act_subj_singular_plu_2'] = 'incepisses';
+fields.push('act_subj_singular_plu_2');
+openFields.push('act_subj_singular_plu_2');
+lockStatus['act_subj_singular_plu_2'] = false;
+answers['act_subj_singular_plu_3'] = 'incepisset';
+fields.push('act_subj_singular_plu_3');
+openFields.push('act_subj_singular_plu_3');
+lockStatus['act_subj_singular_plu_3'] = false;
+answers['act_subj_plural_pres_1'] = 'incipiamus';
+fields.push('act_subj_plural_pres_1');
+openFields.push('act_subj_plural_pres_1');
+lockStatus['act_subj_plural_pres_1'] = false;
+answers['act_subj_plural_pres_2'] = 'incipiatis';
+fields.push('act_subj_plural_pres_2');
+openFields.push('act_subj_plural_pres_2');
+lockStatus['act_subj_plural_pres_2'] = false;
+answers['act_subj_plural_pres_3'] = 'incipiant';
+fields.push('act_subj_plural_pres_3');
+openFields.push('act_subj_plural_pres_3');
+lockStatus['act_subj_plural_pres_3'] = false;
+answers['act_subj_plural_imp_1'] = 'inciperemus';
+fields.push('act_subj_plural_imp_1');
+openFields.push('act_subj_plural_imp_1');
+lockStatus['act_subj_plural_imp_1'] = false;
+answers['act_subj_plural_imp_2'] = 'inciperetis';
+fields.push('act_subj_plural_imp_2');
+openFields.push('act_subj_plural_imp_2');
+lockStatus['act_subj_plural_imp_2'] = false;
+answers['act_subj_plural_imp_3'] = 'inciperent';
+fields.push('act_subj_plural_imp_3');
+openFields.push('act_subj_plural_imp_3');
+lockStatus['act_subj_plural_imp_3'] = false;
+answers['act_subj_plural_perf_1'] = 'inceperimus';
+fields.push('act_subj_plural_perf_1');
+openFields.push('act_subj_plural_perf_1');
+lockStatus['act_subj_plural_perf_1'] = false;
+answers['act_subj_plural_perf_2'] = 'inceperitis';
+fields.push('act_subj_plural_perf_2');
+openFields.push('act_subj_plural_perf_2');
+lockStatus['act_subj_plural_perf_2'] = false;
+answers['act_subj_plural_perf_3'] = 'inceperint';
+fields.push('act_subj_plural_perf_3');
+openFields.push('act_subj_plural_perf_3');
+lockStatus['act_subj_plural_perf_3'] = false;
+answers['act_subj_plural_plu_1'] = 'incepissemus';
+fields.push('act_subj_plural_plu_1');
+openFields.push('act_subj_plural_plu_1');
+lockStatus['act_subj_plural_plu_1'] = false;
+answers['act_subj_plural_plu_2'] = 'incepissetis';
+fields.push('act_subj_plural_plu_2');
+openFields.push('act_subj_plural_plu_2');
+lockStatus['act_subj_plural_plu_2'] = false;
+answers['act_subj_plural_plu_3'] = 'incepissent';
+fields.push('act_subj_plural_plu_3');
+openFields.push('act_subj_plural_plu_3');
+lockStatus['act_subj_plural_plu_3'] = false;
+answers['pass_ind_singular_pres_1'] = 'incipior';
+fields.push('pass_ind_singular_pres_1');
+openFields.push('pass_ind_singular_pres_1');
+lockStatus['pass_ind_singular_pres_1'] = false;
+answers['pass_ind_singular_pres_2'] = 'incipiris';
+fields.push('pass_ind_singular_pres_2');
+openFields.push('pass_ind_singular_pres_2');
+lockStatus['pass_ind_singular_pres_2'] = false;
+answers['pass_ind_singular_pres_3'] = 'incipitur';
+fields.push('pass_ind_singular_pres_3');
+openFields.push('pass_ind_singular_pres_3');
+lockStatus['pass_ind_singular_pres_3'] = false;
+answers['pass_ind_singular_imp_1'] = 'incipiebar';
+fields.push('pass_ind_singular_imp_1');
+openFields.push('pass_ind_singular_imp_1');
+lockStatus['pass_ind_singular_imp_1'] = false;
+answers['pass_ind_singular_imp_2'] = 'incipiebaris';
+fields.push('pass_ind_singular_imp_2');
+openFields.push('pass_ind_singular_imp_2');
+lockStatus['pass_ind_singular_imp_2'] = false;
+answers['pass_ind_singular_imp_3'] = 'incipiebatur';
+fields.push('pass_ind_singular_imp_3');
+openFields.push('pass_ind_singular_imp_3');
+lockStatus['pass_ind_singular_imp_3'] = false;
+answers['pass_ind_singular_fut_1'] = 'incipiar';
+fields.push('pass_ind_singular_fut_1');
+openFields.push('pass_ind_singular_fut_1');
+lockStatus['pass_ind_singular_fut_1'] = false;
+answers['pass_ind_singular_fut_2'] = 'incipieris';
+fields.push('pass_ind_singular_fut_2');
+openFields.push('pass_ind_singular_fut_2');
+lockStatus['pass_ind_singular_fut_2'] = false;
+answers['pass_ind_singular_fut_3'] = 'incipietur';
+fields.push('pass_ind_singular_fut_3');
+openFields.push('pass_ind_singular_fut_3');
+lockStatus['pass_ind_singular_fut_3'] = false;
+answers['pass_ind_singular_perf_1'] = 'inceptus sum';
+fields.push('pass_ind_singular_perf_1');
+openFields.push('pass_ind_singular_perf_1');
+lockStatus['pass_ind_singular_perf_1'] = false;
+answers['pass_ind_singular_perf_2'] = 'inceptus es';
+fields.push('pass_ind_singular_perf_2');
+openFields.push('pass_ind_singular_perf_2');
+lockStatus['pass_ind_singular_perf_2'] = false;
+answers['pass_ind_singular_perf_3'] = 'inceptus est';
+fields.push('pass_ind_singular_perf_3');
+openFields.push('pass_ind_singular_perf_3');
+lockStatus['pass_ind_singular_perf_3'] = false;
+answers['pass_ind_singular_plu_1'] = 'inceptus eram';
+fields.push('pass_ind_singular_plu_1');
+openFields.push('pass_ind_singular_plu_1');
+lockStatus['pass_ind_singular_plu_1'] = false;
+answers['pass_ind_singular_plu_2'] = 'inceptus eras';
+fields.push('pass_ind_singular_plu_2');
+openFields.push('pass_ind_singular_plu_2');
+lockStatus['pass_ind_singular_plu_2'] = false;
+answers['pass_ind_singular_plu_3'] = 'inceptus erat';
+fields.push('pass_ind_singular_plu_3');
+openFields.push('pass_ind_singular_plu_3');
+lockStatus['pass_ind_singular_plu_3'] = false;
+answers['pass_ind_singular_futperf_1'] = 'inceptus ero';
+fields.push('pass_ind_singular_futperf_1');
+openFields.push('pass_ind_singular_futperf_1');
+lockStatus['pass_ind_singular_futperf_1'] = false;
+answers['pass_ind_singular_futperf_2'] = 'inceptus eris';
+fields.push('pass_ind_singular_futperf_2');
+openFields.push('pass_ind_singular_futperf_2');
+lockStatus['pass_ind_singular_futperf_2'] = false;
+answers['pass_ind_singular_futperf_3'] = 'inceptus erit';
+fields.push('pass_ind_singular_futperf_3');
+openFields.push('pass_ind_singular_futperf_3');
+lockStatus['pass_ind_singular_futperf_3'] = false;
+answers['pass_ind_plural_pres_1'] = 'incipimur';
+fields.push('pass_ind_plural_pres_1');
+openFields.push('pass_ind_plural_pres_1');
+lockStatus['pass_ind_plural_pres_1'] = false;
+answers['pass_ind_plural_pres_2'] = 'incipimini';
+fields.push('pass_ind_plural_pres_2');
+openFields.push('pass_ind_plural_pres_2');
+lockStatus['pass_ind_plural_pres_2'] = false;
+answers['pass_ind_plural_pres_3'] = 'incipiuntur';
+fields.push('pass_ind_plural_pres_3');
+openFields.push('pass_ind_plural_pres_3');
+lockStatus['pass_ind_plural_pres_3'] = false;
+answers['pass_ind_plural_imp_1'] = 'incipiebamur';
+fields.push('pass_ind_plural_imp_1');
+openFields.push('pass_ind_plural_imp_1');
+lockStatus['pass_ind_plural_imp_1'] = false;
+answers['pass_ind_plural_imp_2'] = 'incipiebamini';
+fields.push('pass_ind_plural_imp_2');
+openFields.push('pass_ind_plural_imp_2');
+lockStatus['pass_ind_plural_imp_2'] = false;
+answers['pass_ind_plural_imp_3'] = 'incipiebantur';
+fields.push('pass_ind_plural_imp_3');
+openFields.push('pass_ind_plural_imp_3');
+lockStatus['pass_ind_plural_imp_3'] = false;
+answers['pass_ind_plural_fut_1'] = 'incipiemur';
+fields.push('pass_ind_plural_fut_1');
+openFields.push('pass_ind_plural_fut_1');
+lockStatus['pass_ind_plural_fut_1'] = false;
+answers['pass_ind_plural_fut_2'] = 'incipiemini';
+fields.push('pass_ind_plural_fut_2');
+openFields.push('pass_ind_plural_fut_2');
+lockStatus['pass_ind_plural_fut_2'] = false;
+answers['pass_ind_plural_fut_3'] = 'incipientur';
+fields.push('pass_ind_plural_fut_3');
+openFields.push('pass_ind_plural_fut_3');
+lockStatus['pass_ind_plural_fut_3'] = false;
+answers['pass_ind_plural_perf_1'] = 'incepti sumus';
+fields.push('pass_ind_plural_perf_1');
+openFields.push('pass_ind_plural_perf_1');
+lockStatus['pass_ind_plural_perf_1'] = false;
+answers['pass_ind_plural_perf_2'] = 'incepti estis';
+fields.push('pass_ind_plural_perf_2');
+openFields.push('pass_ind_plural_perf_2');
+lockStatus['pass_ind_plural_perf_2'] = false;
+answers['pass_ind_plural_perf_3'] = 'incepti sunt';
+fields.push('pass_ind_plural_perf_3');
+openFields.push('pass_ind_plural_perf_3');
+lockStatus['pass_ind_plural_perf_3'] = false;
+answers['pass_ind_plural_plu_1'] = 'incepti eramus';
+fields.push('pass_ind_plural_plu_1');
+openFields.push('pass_ind_plural_plu_1');
+lockStatus['pass_ind_plural_plu_1'] = false;
+answers['pass_ind_plural_plu_2'] = 'incepti eratis';
+fields.push('pass_ind_plural_plu_2');
+openFields.push('pass_ind_plural_plu_2');
+lockStatus['pass_ind_plural_plu_2'] = false;
+answers['pass_ind_plural_plu_3'] = 'incepti erant';
+fields.push('pass_ind_plural_plu_3');
+openFields.push('pass_ind_plural_plu_3');
+lockStatus['pass_ind_plural_plu_3'] = false;
+answers['pass_ind_plural_futperf_1'] = 'incepti erimus';
+fields.push('pass_ind_plural_futperf_1');
+openFields.push('pass_ind_plural_futperf_1');
+lockStatus['pass_ind_plural_futperf_1'] = false;
+answers['pass_ind_plural_futperf_2'] = 'incepti eritis';
+fields.push('pass_ind_plural_futperf_2');
+openFields.push('pass_ind_plural_futperf_2');
+lockStatus['pass_ind_plural_futperf_2'] = false;
+answers['pass_ind_plural_futperf_3'] = 'incepti erunt';
+fields.push('pass_ind_plural_futperf_3');
+openFields.push('pass_ind_plural_futperf_3');
+lockStatus['pass_ind_plural_futperf_3'] = false;
+answers['pass_subj_singular_pres_1'] = 'incipiar';
+fields.push('pass_subj_singular_pres_1');
+openFields.push('pass_subj_singular_pres_1');
+lockStatus['pass_subj_singular_pres_1'] = false;
+answers['pass_subj_singular_pres_2'] = 'incipiaris';
+fields.push('pass_subj_singular_pres_2');
+openFields.push('pass_subj_singular_pres_2');
+lockStatus['pass_subj_singular_pres_2'] = false;
+answers['pass_subj_singular_pres_3'] = 'incipiatur';
+fields.push('pass_subj_singular_pres_3');
+openFields.push('pass_subj_singular_pres_3');
+lockStatus['pass_subj_singular_pres_3'] = false;
+answers['pass_subj_singular_imp_1'] = 'inciperer';
+fields.push('pass_subj_singular_imp_1');
+openFields.push('pass_subj_singular_imp_1');
+lockStatus['pass_subj_singular_imp_1'] = false;
+answers['pass_subj_singular_imp_2'] = 'incipereris';
+fields.push('pass_subj_singular_imp_2');
+openFields.push('pass_subj_singular_imp_2');
+lockStatus['pass_subj_singular_imp_2'] = false;
+answers['pass_subj_singular_imp_3'] = 'inciperetur';
+fields.push('pass_subj_singular_imp_3');
+openFields.push('pass_subj_singular_imp_3');
+lockStatus['pass_subj_singular_imp_3'] = false;
+answers['pass_subj_singular_perf_1'] = 'inceptus sim';
+fields.push('pass_subj_singular_perf_1');
+openFields.push('pass_subj_singular_perf_1');
+lockStatus['pass_subj_singular_perf_1'] = false;
+answers['pass_subj_singular_perf_2'] = 'inceptus sis';
+fields.push('pass_subj_singular_perf_2');
+openFields.push('pass_subj_singular_perf_2');
+lockStatus['pass_subj_singular_perf_2'] = false;
+answers['pass_subj_singular_perf_3'] = 'inceptus sit';
+fields.push('pass_subj_singular_perf_3');
+openFields.push('pass_subj_singular_perf_3');
+lockStatus['pass_subj_singular_perf_3'] = false;
+answers['pass_subj_singular_plu_1'] = 'inceptus essem';
+fields.push('pass_subj_singular_plu_1');
+openFields.push('pass_subj_singular_plu_1');
+lockStatus['pass_subj_singular_plu_1'] = false;
+answers['pass_subj_singular_plu_2'] = 'inceptus esses';
+fields.push('pass_subj_singular_plu_2');
+openFields.push('pass_subj_singular_plu_2');
+lockStatus['pass_subj_singular_plu_2'] = false;
+answers['pass_subj_singular_plu_3'] = 'inceptus esset';
+fields.push('pass_subj_singular_plu_3');
+openFields.push('pass_subj_singular_plu_3');
+lockStatus['pass_subj_singular_plu_3'] = false;
+answers['pass_subj_plural_pres_1'] = 'incipiamur';
+fields.push('pass_subj_plural_pres_1');
+openFields.push('pass_subj_plural_pres_1');
+lockStatus['pass_subj_plural_pres_1'] = false;
+answers['pass_subj_plural_pres_2'] = 'incipiamini';
+fields.push('pass_subj_plural_pres_2');
+openFields.push('pass_subj_plural_pres_2');
+lockStatus['pass_subj_plural_pres_2'] = false;
+answers['pass_subj_plural_pres_3'] = 'incipiantur';
+fields.push('pass_subj_plural_pres_3');
+openFields.push('pass_subj_plural_pres_3');
+lockStatus['pass_subj_plural_pres_3'] = false;
+answers['pass_subj_plural_imp_1'] = 'inciperemur';
+fields.push('pass_subj_plural_imp_1');
+openFields.push('pass_subj_plural_imp_1');
+lockStatus['pass_subj_plural_imp_1'] = false;
+answers['pass_subj_plural_imp_2'] = 'inciperemini';
+fields.push('pass_subj_plural_imp_2');
+openFields.push('pass_subj_plural_imp_2');
+lockStatus['pass_subj_plural_imp_2'] = false;
+answers['pass_subj_plural_imp_3'] = 'inciperentur';
+fields.push('pass_subj_plural_imp_3');
+openFields.push('pass_subj_plural_imp_3');
+lockStatus['pass_subj_plural_imp_3'] = false;
+answers['pass_subj_plural_perf_1'] = 'incepti simus';
+fields.push('pass_subj_plural_perf_1');
+openFields.push('pass_subj_plural_perf_1');
+lockStatus['pass_subj_plural_perf_1'] = false;
+answers['pass_subj_plural_perf_2'] = 'incepti sitis';
+fields.push('pass_subj_plural_perf_2');
+openFields.push('pass_subj_plural_perf_2');
+lockStatus['pass_subj_plural_perf_2'] = false;
+answers['pass_subj_plural_perf_3'] = 'incepti sint';
+fields.push('pass_subj_plural_perf_3');
+openFields.push('pass_subj_plural_perf_3');
+lockStatus['pass_subj_plural_perf_3'] = false;
+answers['pass_subj_plural_plu_1'] = 'incepti essemus';
+fields.push('pass_subj_plural_plu_1');
+openFields.push('pass_subj_plural_plu_1');
+lockStatus['pass_subj_plural_plu_1'] = false;
+answers['pass_subj_plural_plu_2'] = 'incepti essetis';
+fields.push('pass_subj_plural_plu_2');
+openFields.push('pass_subj_plural_plu_2');
+lockStatus['pass_subj_plural_plu_2'] = false;
+answers['pass_subj_plural_plu_3'] = 'incepti essent';
+fields.push('pass_subj_plural_plu_3');
+openFields.push('pass_subj_plural_plu_3');
+lockStatus['pass_subj_plural_plu_3'] = false;
+</script>
+
+<table name="main">
+    <tr class="buttons">
+        <td></td>
+        <td colspan="3" class="buttons" style="text-align: left; vertical-align: middle;">
+            <input type="checkbox" name="shuffle" id="shuffle" style="display:inline; width: auto;" tabindex="-1"/>
+    		<span>Shuffle (press tab to change fields)</span><!--
+            <input type="checkbox" name="blind" id="blind" style="display:inline; width: auto;" tabindex="-1"/>
+            <span>Hide answers (not yet implemented)</span>-->
+        </td>
+        <td colspan="5" class="buttons" style="text-align: right;">
+            <button onclick="fillAnswers();" tabindex="-1">Show Answers</button>
+    		<button onclick="clearAll();" tabindex="-1">Clear All</button>
+        </td>
+    </tr>
+  <tr class="column-heading-gender">
+  <td></td>
+  <td class="column-heading-1">singular</td>
+<td class="column-heading-1">plural</td>
+<td class="column-heading-1">singular</td>
+<td class="column-heading-1">plural</td>
+<td class="column-heading-2">singular</td>
+<td class="column-heading-2">plural</td>
+<td class="column-heading-2">singular</td>
+<td class="column-heading-2">plural</td>
+</tr>
+<tr class="column-heading-number">
+  <td></td>
+  <td class="column-heading-1" colspan="4">active</td>
+  <td class="column-heading-2" colspan="4">passive</td>
+</tr>
+<tr class="column-heading-number">
+  <td></td>
+  <td class="column-heading-1" colspan="2">indicative</td>
+  <td class="column-heading-1" colspan="2">subjunctive</td>
+  <td class="column-heading-2" colspan="2">indicative</td>
+  <td class="column-heading-2" colspan="2">subjunctive</td>
+</tr>
+
+<tr><td class="header-overlap"></td><td colspan="8" class="section-heading">present</td></tr>
+<tr><td class="row-label"style="padding-top: .4em; " >
+1st person</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_pres_1" id="act_ind_singular_pres_1" value="" style="" tabindex="1"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_pres_1" id="act_ind_plural_pres_1" value="" style="" tabindex="4"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_pres_1" id="act_subj_singular_pres_1" value="" style="" tabindex="7"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_pres_1" id="act_subj_plural_pres_1" value="" style="" tabindex="10"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_pres_1" id="pass_ind_singular_pres_1" value="" style="" tabindex="13"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_pres_1" id="pass_ind_plural_pres_1" value="" style="" tabindex="16"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_pres_1" id="pass_subj_singular_pres_1" value="" style="" tabindex="19"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_pres_1" id="pass_subj_plural_pres_1" value="" style="" tabindex="22"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="row-label">
+2nd person</td>
+<td class="entry-1"style="padding-left: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_pres_2" id="act_ind_singular_pres_2" value="" style="" tabindex="2"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_pres_2" id="act_ind_plural_pres_2" value="" style="" tabindex="5"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_pres_2" id="act_subj_singular_pres_2" value="" style="" tabindex="8"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_pres_2" id="act_subj_plural_pres_2" value="" style="" tabindex="11"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_pres_2" id="pass_ind_singular_pres_2" value="" style="" tabindex="14"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_pres_2" id="pass_ind_plural_pres_2" value="" style="" tabindex="17"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_pres_2" id="pass_subj_singular_pres_2" value="" style="" tabindex="20"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_pres_2" id="pass_subj_plural_pres_2" value="" style="" tabindex="23"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="row-label"style="padding-bottom: .4em; " >
+3rd person</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_pres_3" id="act_ind_singular_pres_3" value="" style="" tabindex="3"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_pres_3" id="act_ind_plural_pres_3" value="" style="" tabindex="6"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_pres_3" id="act_subj_singular_pres_3" value="" style="" tabindex="9"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_pres_3" id="act_subj_plural_pres_3" value="" style="" tabindex="12"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_pres_3" id="pass_ind_singular_pres_3" value="" style="" tabindex="15"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_pres_3" id="pass_ind_plural_pres_3" value="" style="" tabindex="18"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_pres_3" id="pass_subj_singular_pres_3" value="" style="" tabindex="21"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_pres_3" id="pass_subj_plural_pres_3" value="" style="" tabindex="24"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="header-overlap"></td><td colspan="8" class="section-heading">imperfect</td></tr>
+<tr><td class="row-label"style="padding-top: .4em; " >
+1st person</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_imp_1" id="act_ind_singular_imp_1" value="" style="" tabindex="25"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_imp_1" id="act_ind_plural_imp_1" value="" style="" tabindex="28"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_imp_1" id="act_subj_singular_imp_1" value="" style="" tabindex="31"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_imp_1" id="act_subj_plural_imp_1" value="" style="" tabindex="34"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_imp_1" id="pass_ind_singular_imp_1" value="" style="" tabindex="37"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_imp_1" id="pass_ind_plural_imp_1" value="" style="" tabindex="40"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_imp_1" id="pass_subj_singular_imp_1" value="" style="" tabindex="43"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_imp_1" id="pass_subj_plural_imp_1" value="" style="" tabindex="46"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="row-label">
+2nd person</td>
+<td class="entry-1"style="padding-left: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_imp_2" id="act_ind_singular_imp_2" value="" style="" tabindex="26"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_imp_2" id="act_ind_plural_imp_2" value="" style="" tabindex="29"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_imp_2" id="act_subj_singular_imp_2" value="" style="" tabindex="32"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_imp_2" id="act_subj_plural_imp_2" value="" style="" tabindex="35"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_imp_2" id="pass_ind_singular_imp_2" value="" style="" tabindex="38"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_imp_2" id="pass_ind_plural_imp_2" value="" style="" tabindex="41"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_imp_2" id="pass_subj_singular_imp_2" value="" style="" tabindex="44"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_imp_2" id="pass_subj_plural_imp_2" value="" style="" tabindex="47"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="row-label"style="padding-bottom: .4em; " >
+3rd person</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_imp_3" id="act_ind_singular_imp_3" value="" style="" tabindex="27"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_imp_3" id="act_ind_plural_imp_3" value="" style="" tabindex="30"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_imp_3" id="act_subj_singular_imp_3" value="" style="" tabindex="33"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_imp_3" id="act_subj_plural_imp_3" value="" style="" tabindex="36"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_imp_3" id="pass_ind_singular_imp_3" value="" style="" tabindex="39"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_imp_3" id="pass_ind_plural_imp_3" value="" style="" tabindex="42"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_imp_3" id="pass_subj_singular_imp_3" value="" style="" tabindex="45"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_imp_3" id="pass_subj_plural_imp_3" value="" style="" tabindex="48"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="header-overlap"></td><td colspan="8" class="section-heading">future</td></tr>
+<tr><td class="row-label"style="padding-top: .4em; " >
+1st person</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_fut_1" id="act_ind_singular_fut_1" value="" style="" tabindex="49"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_fut_1" id="act_ind_plural_fut_1" value="" style="" tabindex="52"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_fut_1" id="pass_ind_singular_fut_1" value="" style="" tabindex="55"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_fut_1" id="pass_ind_plural_fut_1" value="" style="" tabindex="58"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+</td>
+</tr>
+<tr><td class="row-label">
+2nd person</td>
+<td class="entry-1"style="padding-left: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_fut_2" id="act_ind_singular_fut_2" value="" style="" tabindex="50"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_fut_2" id="act_ind_plural_fut_2" value="" style="" tabindex="53"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; " >
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_fut_2" id="pass_ind_singular_fut_2" value="" style="" tabindex="56"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_fut_2" id="pass_ind_plural_fut_2" value="" style="" tabindex="59"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+</td>
+</tr>
+<tr><td class="row-label"style="padding-bottom: .4em; " >
+3rd person</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_fut_3" id="act_ind_singular_fut_3" value="" style="" tabindex="51"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_fut_3" id="act_ind_plural_fut_3" value="" style="" tabindex="54"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_fut_3" id="pass_ind_singular_fut_3" value="" style="" tabindex="57"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_fut_3" id="pass_ind_plural_fut_3" value="" style="" tabindex="60"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+</td>
+</tr>
+<tr><td class="header-overlap"></td><td colspan="8" class="section-heading">perfect</td></tr>
+<tr><td class="row-label"style="padding-top: .4em; " >
+1st person</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_perf_1" id="act_ind_singular_perf_1" value="" style="" tabindex="61"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_perf_1" id="act_ind_plural_perf_1" value="" style="" tabindex="64"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_perf_1" id="act_subj_singular_perf_1" value="" style="" tabindex="67"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_perf_1" id="act_subj_plural_perf_1" value="" style="" tabindex="70"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_perf_1" id="pass_ind_singular_perf_1" value="" style="" tabindex="73"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_perf_1" id="pass_ind_plural_perf_1" value="" style="" tabindex="76"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_perf_1" id="pass_subj_singular_perf_1" value="" style="" tabindex="79"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_perf_1" id="pass_subj_plural_perf_1" value="" style="" tabindex="82"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="row-label">
+2nd person</td>
+<td class="entry-1"style="padding-left: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_perf_2" id="act_ind_singular_perf_2" value="" style="" tabindex="62"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_perf_2" id="act_ind_plural_perf_2" value="" style="" tabindex="65"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_perf_2" id="act_subj_singular_perf_2" value="" style="" tabindex="68"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_perf_2" id="act_subj_plural_perf_2" value="" style="" tabindex="71"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_perf_2" id="pass_ind_singular_perf_2" value="" style="" tabindex="74"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_perf_2" id="pass_ind_plural_perf_2" value="" style="" tabindex="77"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_perf_2" id="pass_subj_singular_perf_2" value="" style="" tabindex="80"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_perf_2" id="pass_subj_plural_perf_2" value="" style="" tabindex="83"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="row-label"style="padding-bottom: .4em; " >
+3rd person</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_perf_3" id="act_ind_singular_perf_3" value="" style="" tabindex="63"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_perf_3" id="act_ind_plural_perf_3" value="" style="" tabindex="66"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_perf_3" id="act_subj_singular_perf_3" value="" style="" tabindex="69"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_perf_3" id="act_subj_plural_perf_3" value="" style="" tabindex="72"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_perf_3" id="pass_ind_singular_perf_3" value="" style="" tabindex="75"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_perf_3" id="pass_ind_plural_perf_3" value="" style="" tabindex="78"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_perf_3" id="pass_subj_singular_perf_3" value="" style="" tabindex="81"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_perf_3" id="pass_subj_plural_perf_3" value="" style="" tabindex="84"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="header-overlap"></td><td colspan="8" class="section-heading">pluperfect</td></tr>
+<tr><td class="row-label"style="padding-top: .4em; " >
+1st person</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_plu_1" id="act_ind_singular_plu_1" value="" style="" tabindex="85"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_plu_1" id="act_ind_plural_plu_1" value="" style="" tabindex="88"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_plu_1" id="act_subj_singular_plu_1" value="" style="" tabindex="91"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_plu_1" id="act_subj_plural_plu_1" value="" style="" tabindex="94"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_plu_1" id="pass_ind_singular_plu_1" value="" style="" tabindex="97"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_plu_1" id="pass_ind_plural_plu_1" value="" style="" tabindex="100"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_plu_1" id="pass_subj_singular_plu_1" value="" style="" tabindex="103"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_plu_1" id="pass_subj_plural_plu_1" value="" style="" tabindex="106"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="row-label">
+2nd person</td>
+<td class="entry-1"style="padding-left: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_plu_2" id="act_ind_singular_plu_2" value="" style="" tabindex="86"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_plu_2" id="act_ind_plural_plu_2" value="" style="" tabindex="89"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_plu_2" id="act_subj_singular_plu_2" value="" style="" tabindex="92"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_plu_2" id="act_subj_plural_plu_2" value="" style="" tabindex="95"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_plu_2" id="pass_ind_singular_plu_2" value="" style="" tabindex="98"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_plu_2" id="pass_ind_plural_plu_2" value="" style="" tabindex="101"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_plu_2" id="pass_subj_singular_plu_2" value="" style="" tabindex="104"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_plu_2" id="pass_subj_plural_plu_2" value="" style="" tabindex="107"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="row-label"style="padding-bottom: .4em; " >
+3rd person</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_plu_3" id="act_ind_singular_plu_3" value="" style="" tabindex="87"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_plu_3" id="act_ind_plural_plu_3" value="" style="" tabindex="90"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_subj_singular_plu_3" id="act_subj_singular_plu_3" value="" style="" tabindex="93"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_subj_plural_plu_3" id="act_subj_plural_plu_3" value="" style="" tabindex="96"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_plu_3" id="pass_ind_singular_plu_3" value="" style="" tabindex="99"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_plu_3" id="pass_ind_plural_plu_3" value="" style="" tabindex="102"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_subj_singular_plu_3" id="pass_subj_singular_plu_3" value="" style="" tabindex="105"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_subj_plural_plu_3" id="pass_subj_plural_plu_3" value="" style="" tabindex="108"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+</tr>
+<tr><td class="header-overlap"></td><td colspan="8" class="section-heading">future perfect</td></tr>
+<tr><td class="row-label"style="padding-top: .4em; " >
+1st person</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_futperf_1" id="act_ind_singular_futperf_1" value="" style="" tabindex="109"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_futperf_1" id="act_ind_plural_futperf_1" value="" style="" tabindex="112"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-top: .4em; " >
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-top: .4em; " >
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_futperf_1" id="pass_ind_singular_futperf_1" value="" style="" tabindex="115"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_futperf_1" id="pass_ind_plural_futperf_1" value="" style="" tabindex="118"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-top: .4em; " >
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-top: .4em; " >
+</td>
+</tr>
+<tr><td class="row-label">
+2nd person</td>
+<td class="entry-1"style="padding-left: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_futperf_2" id="act_ind_singular_futperf_2" value="" style="" tabindex="110"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_futperf_2" id="act_ind_plural_futperf_2" value="" style="" tabindex="113"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; " >
+</td>
+<td class="entry-1"style="padding-right: .4em; " >
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_futperf_2" id="pass_ind_singular_futperf_2" value="" style="" tabindex="116"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_futperf_2" id="pass_ind_plural_futperf_2" value="" style="" tabindex="119"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; " >
+</td>
+<td class="entry-2"style="padding-right: .4em; " >
+</td>
+</tr>
+<tr><td class="row-label"style="padding-bottom: .4em; " >
+3rd person</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_singular_futperf_3" id="act_ind_singular_futperf_3" value="" style="" tabindex="111"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="act_ind_plural_futperf_3" id="act_ind_plural_futperf_3" value="" style="" tabindex="114"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-1"style="padding-left: .4em; padding-bottom: .4em; " >
+</td>
+<td class="entry-1"style="padding-right: .4em; padding-bottom: .4em; " >
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_singular_futperf_3" id="pass_ind_singular_futperf_3" value="" style="" tabindex="117"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+<input type="text" class="entry" name="pass_ind_plural_futperf_3" id="pass_ind_plural_futperf_3" value="" style="" tabindex="120"  onchange='//update(this);' onblur='//update(this);' onfocus='markActive(this);' onclick='//markActive(this);' />
+</td>
+<td class="entry-2"style="padding-left: .4em; padding-bottom: .4em; " >
+</td>
+<td class="entry-2"style="padding-right: .4em; padding-bottom: .4em; " >
+</td>
+</tr>
+</table>
+<script language="javascript">
+	window.oncontextmenu = null;
+	var inputs = document.getElementsByTagName("input");
+	for (elem in inputs) {
+		inputs[elem].oncontextmenu = handleClick;
+		inputs[elem].onchange = handleChange;
+		inputs[elem].onblur = handleBlur;
+	}
+	
+	// set up settings ui elements (currently just the shuffle checkbox)
+	document.body.onload = loadSettings;
+	document.body.onkeydown = handleKeystroke;
+	document.getElementById("shuffle").onchange = saveSettings;
+	
+</script>
+</body>
+</html>
