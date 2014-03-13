@@ -1,8 +1,8 @@
 # Latinquiz
 
-## Latin grammar quiz generator
+A Latin grammar quiz generator.
 
-### Lovingly hand-crafted *just for you* by Michael Baker, 2012.
+**Lovingly hand-crafted *just for you* by Michael Baker, 2012**
 
 https://github.com/orochi235/latinquiz
 
@@ -14,7 +14,7 @@ Also included are scripts to scrape verb conjugations from verbix.com and genera
 
 I've also included the raw text files I entered by hand before I got ambitious/greedy/bored enough to write a scraper. Maybe someone will find a use for them. Probably not. But maybe.
 
-## Taking the quizzes
+## Taking the Quizzes
 
 Simply click any text field on the chart to enter your answer. Press 'enter' or 'tab' to submit your answer and move to the next field. Click the 'shuffle' checkbox at the top of the page for a more challenging experience.
 
@@ -37,4 +37,4 @@ I take no responsibility for the code quality of these PHP scripts; they were wr
 
 ## License
 
-Do whatever the fuck you want with it. Is there a legal term for that?
+Do whatever the fuck you want with it. (Or don't.)
