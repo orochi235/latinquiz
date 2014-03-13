@@ -33,7 +33,7 @@ Click 'show answers' to fill in all blank and incorrect fields. You can distingu
 
 They're written in PHP (sorry) and designed to output a self-contained HTML "applet". It uses the DOM API's instead of jQuery because I don't think I knew what jQuery was at the time. I ran them on an Apache 2.0 server with either PHP 4 or 5. Install a web server and get PHP running on it, place this project on the server, and then access the appropriate PHP script via a web browser. Save what's sent to your browser as an HTML file, and distribute as needed.
 
-I take no responsibility for the code quality of these PHP scripts; they were written quickly, not well. It should be possible to modify them for other languages, curricula (see? they work!) and parts of speech without too much effort. Just to be clear, we're talking about *your* effort, not mine. :)
+I take no responsibility for the code quality of these scripts; they were written quickly, not well. It should be possible to modify them for other languages, curricula (see? they work!) and parts of speech without too much effort. Just to be clear, we're talking about *your* effort, not mine. :)
 
 ## License
 
