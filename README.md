@@ -21,7 +21,7 @@ Simply click any text field on the chart to enter your answer. Press 'enter' or 
 As you submit answers, fields are color-coded by result:
 * Green: you got it right
 * Red: you got it wrong
-* Blue: You punked out and asked the computer for the answer
+* Blue: you punked out and asked the computer for the answer
 
 If you get a field wrong or leave it blank, you can return to it and submit a new answer as many times as you like. Once a field contains a correct answer, it will lock. (You can print completed quizzes for a handy study guide.) 
 
